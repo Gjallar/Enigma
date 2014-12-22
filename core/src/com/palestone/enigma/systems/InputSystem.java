@@ -17,22 +17,32 @@ public class InputSystem extends EntitySystem{
     public void update(float delta) {
         PlayerSystem playerSystem = engine.getSystem(PlayerSystem.class);
 
-        Vector2 acceleration = new Vector2();
-        float accelerationAmount = 0.2f;
-
         if(Gdx.input.isKeyPressed(Input.Keys.W)) {
-            acceleration.y += accelerationAmount;
+            playerSystem.setWalkingUp(true);
         }
-        if(Gdx.input.isKeyPressed(Input.Keys.S)) {
-            acceleration.y -= accelerationAmount;
-        }
-        if(Gdx.input.isKeyPressed(Input.Keys.A)) {
-            acceleration.x -= accelerationAmount;
-        }
-        if(Gdx.input.isKeyPressed(Input.Keys.D)) {
-            acceleration.x += accelerationAmount;
+        else {
+            playerSystem.setWalkingUp(false);
         }
 
-        playerSystem.addAcceleration(acceleration);
+        if(Gdx.input.isKeyPressed(Input.Keys.S)) {
+            playerSystem.setWalkingDown(true);
+        }
+        else {
+            playerSystem.setWalkingDown(false);
+        }
+
+        if(Gdx.input.isKeyPressed(Input.Keys.D)) {
+            playerSystem.setWalkingRight(true);
+        }
+        else {
+            playerSystem.setWalkingRight(false);
+        }
+
+        if(Gdx.input.isKeyPressed(Input.Keys.A)) {
+            playerSystem.setWalkingLeft(true);
+        }
+        else {
+            playerSystem.setWalkingLeft(false);
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.palestone.enigma.systems;
 
 import com.badlogic.ashley.core.ComponentMapper;
+import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.systems.IteratingSystem;
@@ -8,6 +9,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
+import com.palestone.enigma.EnigmaMain;
 import com.palestone.enigma.TextureAssets;
 import com.palestone.enigma.components.TextureComponent;
 import com.palestone.enigma.components.TransformComponent;
@@ -16,16 +18,14 @@ import java.util.Comparator;
 
 public class RenderingSystem extends IteratingSystem{
 
-    private SpriteBatch batch;
-    private OrthographicCamera camera;
-
+    private EnigmaMain game;
     private Comparator<Entity> comparator;
     private Array<Entity> renderQueue;
 
     private ComponentMapper<TextureComponent> textureMapper;
     private ComponentMapper<TransformComponent> transformMapper;
 
-    public RenderingSystem(SpriteBatch batch, OrthographicCamera camera) {
+    public RenderingSystem(EnigmaMain game) {
         super(Family.getFor(TextureComponent.class));
 
         textureMapper = ComponentMapper.getFor(TextureComponent.class);
@@ -41,9 +41,7 @@ public class RenderingSystem extends IteratingSystem{
             }
         };
 
-        this.batch = batch;
-        this.camera = camera;
-
+        this.game = game;
     }
 
     @Override
@@ -52,9 +50,9 @@ public class RenderingSystem extends IteratingSystem{
 
         renderQueue.sort(comparator);
 
-        camera.update();
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
+        game.getActiveScreen().getCamera().update();
+        game.batch.setProjectionMatrix(game.getActiveScreen().getCamera().combined);
+        game.batch.begin();
 
         for(Entity entity : renderQueue) {
             TextureComponent textureComponent = textureMapper.get(entity);
@@ -63,15 +61,15 @@ public class RenderingSystem extends IteratingSystem{
             float originX = 0f;
             float originY = 0f;
 
-            batch.draw(textureComponent.region,
+            game.batch.draw(textureComponent.region,
                        transformComponent.position.x, transformComponent.position.y,
                        originX, originY,
                        textureComponent.region.getRegionWidth(), textureComponent.region.getRegionHeight(),
                        transformComponent.scale.x, transformComponent.scale.y,
                        MathUtils.radiansToDegrees * transformComponent.rotation);
         }
-
-        batch.end();
+        game.batch.draw(TextureAssets.player, 40, 40);
+        game.batch.end();
         renderQueue.clear();
     }
 

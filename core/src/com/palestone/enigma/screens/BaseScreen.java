@@ -79,4 +79,12 @@ public abstract class BaseScreen implements Screen {
     public void setHeight(int height) {
         this.height = height;
     }
+
+    public OrthographicCamera getCamera() {
+        return camera;
+    }
+
+    public void setCamera(OrthographicCamera camera) {
+        this.camera = camera;
+    }
 }

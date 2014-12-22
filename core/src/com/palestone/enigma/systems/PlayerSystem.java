@@ -11,9 +11,10 @@ import com.palestone.enigma.components.TransformComponent;
 
 public class PlayerSystem extends IteratingSystem{
 
-    private Vector2 acceleration;
-    private float deceleration = 0.2f;
-    private float maxSpeed = 5f;
+    private boolean walkingUp, walkingDown, walkingLeft, walkingRight;
+    private float accelerationAmount = 20f;
+    private float decelerationAmount = 20f;
+    private float maxSpeed = 200f;
 
     private ComponentMapper<MovementComponent> movementMapper;
     private ComponentMapper<TransformComponent> transformMapper;
@@ -23,8 +24,6 @@ public class PlayerSystem extends IteratingSystem{
     public PlayerSystem() {
         super(Family.getFor(PlayerComponent.class));
 
-        acceleration = new Vector2();
-
         movementMapper = ComponentMapper.getFor(MovementComponent.class);
         transformMapper = ComponentMapper.getFor(TransformComponent.class);
         textureMapper = ComponentMapper.getFor(TextureComponent.class);
@@ -33,34 +32,32 @@ public class PlayerSystem extends IteratingSystem{
     @Override
     public void update(float delta) {
         super.update(delta);
-        acceleration.set(0, 0);
     }
 
     @Override
-    protected void processEntity(Entity entity, float deltaTime) {
+    protected void processEntity(Entity entity, float delta) {
         MovementComponent movementComponent = movementMapper.get(entity);
-        movementComponent.acceleration.set(acceleration);
 
-        if (acceleration.x == 0) {
-            if(!(movementComponent.velocity.x > -deceleration && movementComponent.velocity.x < deceleration)) {
+        if (!walkingRight && !walkingLeft) {
+            if(!(movementComponent.velocity.x > -(decelerationAmount * delta) && movementComponent.velocity.x < (decelerationAmount * delta))) {
                 if (movementComponent.velocity.x > 0) {
-                    movementComponent.velocity.x -= deceleration;
+                    movementComponent.velocity.x -= (decelerationAmount * delta);
                 }
                 else {
-                    movementComponent.velocity.x += deceleration;
+                    movementComponent.velocity.x += (decelerationAmount * delta);
                 }
             }
             else {
                 movementComponent.velocity.x = 0;
             }
         }
-        if (acceleration.y == 0) {
-            if(!(movementComponent.velocity.y > -deceleration && movementComponent.velocity.y < deceleration)) {
+        if (!walkingUp && !walkingDown) {
+            if(!(movementComponent.velocity.y > -(decelerationAmount * delta) && movementComponent.velocity.y < (decelerationAmount * delta))) {
                 if (movementComponent.velocity.y > 0) {
-                    movementComponent.velocity.y -= deceleration;
+                    movementComponent.velocity.y -= (decelerationAmount * delta);
                 }
                 else {
-                    movementComponent.velocity.y += deceleration;
+                    movementComponent.velocity.y += (decelerationAmount * delta);
                 }
             }
             else {
@@ -68,20 +65,57 @@ public class PlayerSystem extends IteratingSystem{
             }
         }
 
-        if (movementComponent.velocity.x < maxSpeed && movementComponent.velocity.x > -maxSpeed) {
-            movementComponent.velocity.x += acceleration.x;
+        if(walkingUp) {
+            movementComponent.acceleration.add(0, accelerationAmount * delta);
         }
-        if (movementComponent.velocity.y < maxSpeed && movementComponent.velocity.y > -maxSpeed) {
-            movementComponent.velocity.y += acceleration.y;
+        if(walkingDown) {
+            movementComponent.acceleration.add(0, -accelerationAmount * delta);
+        }
+        if(walkingRight) {
+            movementComponent.acceleration.add(accelerationAmount * delta, 0);
+        }
+        if(walkingLeft) {
+            movementComponent.acceleration.add(-accelerationAmount * delta, 0);
         }
 
-        movementComponent.acceleration.set(new Vector2(0, 0));
-        
+        movementComponent.velocity.add(movementComponent.acceleration);
+        movementComponent.velocity.limit(maxSpeed * delta);
+
+        movementComponent.acceleration.set(0, 0);
+
         TransformComponent transformComponent = transformMapper.get(entity);
         transformComponent.position.add(movementComponent.velocity);
     }
 
-    public void addAcceleration(Vector2 acceleration) {
-        this.acceleration.add(acceleration);
+    public boolean isWalkingUp() {
+        return walkingUp;
+    }
+
+    public void setWalkingUp(boolean walkingUp) {
+        this.walkingUp = walkingUp;
+    }
+
+    public boolean isWalkingDown() {
+        return walkingDown;
+    }
+
+    public void setWalkingDown(boolean walkingDown) {
+        this.walkingDown = walkingDown;
+    }
+
+    public boolean isWalkingLeft() {
+        return walkingLeft;
+    }
+
+    public void setWalkingLeft(boolean walkingLeft) {
+        this.walkingLeft = walkingLeft;
+    }
+
+    public boolean isWalkingRight() {
+        return walkingRight;
+    }
+
+    public void setWalkingRight(boolean walkingRight) {
+        this.walkingRight = walkingRight;
     }
 }
