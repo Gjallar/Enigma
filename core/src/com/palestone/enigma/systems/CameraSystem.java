@@ -7,6 +7,7 @@ import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.utils.ImmutableArray;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.palestone.enigma.EnigmaMain;
 import com.palestone.enigma.components.PlayerComponent;
@@ -33,9 +34,10 @@ public class CameraSystem extends EntitySystem {
         TextureComponent playerTexture = entity.getComponent(TextureComponent.class);
 
         float lerpAmount = 20f * delta;
+        float cameraX = playerPosition.position.x + playerTexture.region.getRegionWidth() / 2;
+        float cameraY = playerPosition.position.y + playerTexture.region.getRegionHeight() / 2;
 
-        camera.position.lerp(new Vector3(playerPosition.position.x + playerTexture.region.getRegionWidth() / 2,
-                playerPosition.position.y + playerTexture.region.getRegionHeight() / 2, 0), lerpAmount);
+        camera.position.lerp(new Vector3(cameraX, cameraY, 0), lerpAmount);
     }
 
     public OrthographicCamera getCamera() {
