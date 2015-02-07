@@ -8,6 +8,7 @@ import com.badlogic.gdx.math.Vector2;
 
 public class InputSystem extends EntitySystem{
 
+    private boolean escapePressed;
     private Engine engine;
     public InputSystem(Engine engine) {
         this.engine = engine;
@@ -16,6 +17,16 @@ public class InputSystem extends EntitySystem{
     @Override
     public void update(float delta) {
         PlayerSystem playerSystem = engine.getSystem(PlayerSystem.class);
+
+        if(Gdx.input.isKeyPressed(Input.Keys.ESCAPE) && !escapePressed) {
+            JsonSaveGameSystem jsonSaveGameSystem = engine.getSystem(JsonSaveGameSystem.class);
+            jsonSaveGameSystem.saveWorld();
+            escapePressed = true;
+
+        }
+        else if(!Gdx.input.isKeyPressed(Input.Keys.ESCAPE)) {
+            escapePressed = false;
+        }
 
         if(Gdx.input.isKeyPressed(Input.Keys.W)) {
             playerSystem.setWalkingUp(true);

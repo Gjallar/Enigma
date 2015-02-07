@@ -4,27 +4,27 @@ import com.badlogic.ashley.core.*;
 import com.badlogic.ashley.systems.IteratingSystem;
 import com.badlogic.gdx.math.Vector2;
 import com.palestone.enigma.World;
-import com.palestone.enigma.components.MovementComponent;
-import com.palestone.enigma.components.PlayerComponent;
-import com.palestone.enigma.components.TextureComponent;
-import com.palestone.enigma.components.TransformComponent;
+import com.palestone.enigma.components.*;
 
 public class PlayerSystem extends IteratingSystem{
 
+    public static long id;
     private boolean walkingUp, walkingDown, walkingLeft, walkingRight;
     private float accelerationAmount = 20f;
     private float decelerationAmount = 20f;
     private float maxSpeed = 200f;
 
     private ComponentMapper<MovementComponent> movementMapper;
+    private ComponentMapper<CollisionComponent> collisionMapper;
     private ComponentMapper<TransformComponent> transformMapper;
     private ComponentMapper<TextureComponent> textureMapper;
 
 
     public PlayerSystem() {
-        super(Family.getFor(PlayerComponent.class));
+        super(Family.all(PlayerComponent.class).get());
 
         movementMapper = ComponentMapper.getFor(MovementComponent.class);
+        collisionMapper = ComponentMapper.getFor(CollisionComponent.class);
         transformMapper = ComponentMapper.getFor(TransformComponent.class);
         textureMapper = ComponentMapper.getFor(TextureComponent.class);
     }
@@ -37,6 +37,7 @@ public class PlayerSystem extends IteratingSystem{
     @Override
     protected void processEntity(Entity entity, float delta) {
         MovementComponent movementComponent = movementMapper.get(entity);
+        CollisionComponent collisionComponent = collisionMapper.get(entity);
 
         if (!walkingRight && !walkingLeft) {
             if(!(movementComponent.velocity.x > -(decelerationAmount * delta) && movementComponent.velocity.x < (decelerationAmount * delta))) {
@@ -85,6 +86,7 @@ public class PlayerSystem extends IteratingSystem{
 
         TransformComponent transformComponent = transformMapper.get(entity);
         transformComponent.position.add(movementComponent.velocity);
+        collisionComponent.body.setPosition(transformComponent.position.x, transformComponent.position.y);
     }
 
     public boolean isWalkingUp() {

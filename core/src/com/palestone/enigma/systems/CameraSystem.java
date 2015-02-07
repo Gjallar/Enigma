@@ -28,14 +28,13 @@ public class CameraSystem extends EntitySystem {
 
     @Override
     public void update(float delta) {
-        ImmutableArray<Entity> entities = engine.getEntitiesFor(Family.getFor(PlayerComponent.class));
-        Entity entity = entities.get(0);
-        TransformComponent playerPosition = entity.getComponent(TransformComponent.class);
-        TextureComponent playerTexture = entity.getComponent(TextureComponent.class);
+        Entity player = engine.getEntity(PlayerSystem.id);
+        TransformComponent playerPosition = player.getComponent(TransformComponent.class);
+        TextureComponent playerTexture = player.getComponent(TextureComponent.class);
 
-        float lerpAmount = 20f * delta;
-        float cameraX = playerPosition.position.x + playerTexture.region.getRegionWidth() / 2;
-        float cameraY = playerPosition.position.y + playerTexture.region.getRegionHeight() / 2;
+        float lerpAmount = 18 * delta;
+        float cameraX = MathUtils.round(playerPosition.position.x) + playerTexture.region.getRegionWidth() / 2;
+        float cameraY = MathUtils.round(playerPosition.position.y) + playerTexture.region.getRegionHeight() / 2;
 
         camera.position.lerp(new Vector3(cameraX, cameraY, 0), lerpAmount);
     }

@@ -2,16 +2,16 @@ package com.palestone.enigma;
 
 import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
-import com.badlogic.gdx.math.MathUtils;
-import com.palestone.enigma.components.MovementComponent;
-import com.palestone.enigma.components.PlayerComponent;
-import com.palestone.enigma.components.TextureComponent;
-import com.palestone.enigma.components.TransformComponent;
+import com.badlogic.gdx.math.Rectangle;
+import com.palestone.enigma.components.*;
 import com.palestone.enigma.enums.Layer;
+import com.palestone.enigma.systems.JsonSaveGameSystem;
+import com.palestone.enigma.systems.PlayerSystem;
 
 public class World {
 
     private Engine engine;
+    private Entity level;
 
     public World(Engine engine) {
         this.engine = engine;
@@ -19,65 +19,48 @@ public class World {
 
     public void create() {
         createPlayer();
-        createLevel();
+        createSections();
     }
 
     private void createPlayer() {
-        Entity entity = new Entity();
+        Entity player = new Entity();
 
         MovementComponent movementComponent = new MovementComponent();
         TransformComponent transformComponent = new TransformComponent();
         TextureComponent textureComponent = new TextureComponent();
         PlayerComponent playerComponent = new PlayerComponent();
+        CollisionComponent collisionComponent = new CollisionComponent();
 
-        textureComponent.region.setRegion(TextureAssets.player);
+        textureComponent.region.setRegion(TextureAssets.unitMap.get("player"));
         textureComponent.layer = Layer.MIDDLE;
 
-        entity.add(movementComponent);
-        entity.add(transformComponent);
-        entity.add(textureComponent);
-        entity.add(playerComponent);
+        collisionComponent.body = new Rectangle(transformComponent.position.x, transformComponent.position.y,
+                32, 32);
 
-        engine.addEntity(entity);
+        player.add(movementComponent);
+        player.add(transformComponent);
+        player.add(textureComponent);
+        player.add(collisionComponent);
+        player.add(playerComponent);
+
+        engine.addEntity(player);
+        PlayerSystem.id = player.getId();
+
     }
 
-    private void createLevel() {
+    private void createSections() {
+        Entity section = new Entity();
 
-        for(int y = 0; y < 16; y++) {
-            for(int x = 0; x < 16; x++) {
-                Entity entity = new Entity();
+        SectionComponent sectionComp = new SectionComponent();
+        sectionComp.tileChance = 2;
 
-                TransformComponent transformComponent = new TransformComponent();
-                TextureComponent textureComponent = new TextureComponent();
+        section.add(sectionComp);
 
-                textureComponent.region.setRegion(TextureAssets.ground);
-                textureComponent.layer = Layer.BACKGROUND;
+        engine.addEntity(section);
+    }
 
-                transformComponent.position.set(x * 32, y * 32);
-
-                entity.add(transformComponent);
-                entity.add(textureComponent);
-
-                engine.addEntity(entity);
-
-                int chance = MathUtils.random(2);
-                if (chance == 0) {
-                    Entity entity2 = new Entity();
-
-                    TransformComponent transformComponent2 = new TransformComponent();
-                    TextureComponent textureComponent2 = new TextureComponent();
-
-                    textureComponent2.region.setRegion(TextureAssets.wall);
-                    textureComponent2.layer = Layer.MIDDLE;
-
-                    transformComponent2.position.set(x * 32, y * 32);
-
-                    entity.add(transformComponent2);
-                    entity.add(textureComponent2);
-
-                    engine.addEntity(entity);
-                }
-            }
-        }
+    public void loadSections() {
+        JsonSaveGameSystem jsonSaveGameSystem = engine.getSystem(JsonSaveGameSystem.class);
+        jsonSaveGameSystem.loadWorld();
     }
 }
