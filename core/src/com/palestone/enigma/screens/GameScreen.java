@@ -20,6 +20,7 @@ public class GameScreen extends BaseScreen{
         engine.addSystem(new CameraSystem(engine, game));
         engine.addSystem(new RenderingSystem(game));
         engine.addSystem(new InputSystem(engine));
+        engine.addSystem(new DoorSystem(engine, world));
         engine.addSystem(new SectionSystem(engine));
         engine.addSystem(new PlayerSystem());
         engine.addSystem(new CollisionSystem(engine));

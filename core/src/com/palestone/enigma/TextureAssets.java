@@ -28,6 +28,7 @@ public class TextureAssets {
         sectionMap = new ObjectMap<String, TextureRegion>();
         sectionMap.put("ground", useRegion(sheet, 32, 0, 32, 32));
         sectionMap.put("wall", useRegion(sheet, 64, 0, 32, 32));
+        sectionMap.put("door", useRegion(sheet, 0, 0, 32, 32));
 
         unitMap = new ObjectMap<String, TextureRegion>();
         unitMap.put("player", useRegion(sheet, 0, 0, 32, 64));

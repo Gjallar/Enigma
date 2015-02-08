@@ -1,8 +1,12 @@
 package com.palestone.enigma;
 
+import com.badlogic.ashley.core.ComponentMapper;
 import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.ObjectMap;
 import com.palestone.enigma.components.*;
 import com.palestone.enigma.enums.Layer;
 import com.palestone.enigma.systems.JsonSaveGameSystem;
@@ -11,10 +15,16 @@ import com.palestone.enigma.systems.PlayerSystem;
 public class World {
 
     private Engine engine;
-    private Entity level;
+    public static Vector2 activeSection;
+    public static ObjectMap<Vector2, Entity> sections;
+
+    ComponentMapper<SectionComponent> sectionMapper;
 
     public World(Engine engine) {
         this.engine = engine;
+        sections = new ObjectMap<Vector2, Entity>();
+
+        sectionMapper = ComponentMapper.getFor(SectionComponent.class);
     }
 
     public void create() {
@@ -31,8 +41,11 @@ public class World {
         PlayerComponent playerComponent = new PlayerComponent();
         CollisionComponent collisionComponent = new CollisionComponent();
 
-        textureComponent.region.setRegion(TextureAssets.unitMap.get("player"));
+        textureComponent.textureName = "player";
+        textureComponent.region.setRegion(TextureAssets.unitMap.get(textureComponent.textureName));
         textureComponent.layer = Layer.MIDDLE;
+
+        transformComponent.position.set(200, 200);
 
         collisionComponent.body = new Rectangle(transformComponent.position.x, transformComponent.position.y,
                 32, 32);
@@ -45,7 +58,6 @@ public class World {
 
         engine.addEntity(player);
         PlayerSystem.id = player.getId();
-
     }
 
     private void createSections() {
@@ -53,14 +65,27 @@ public class World {
 
         SectionComponent sectionComp = new SectionComponent();
         sectionComp.tileChance = 2;
+        sectionComp.initialSection = true;
+        sectionComp.key = new Vector2(0, 0);
 
         section.add(sectionComp);
 
         engine.addEntity(section);
+
+        activeSection = sectionComp.key;
+        sections.put(sectionComp.key, section);
     }
 
     public void loadSections() {
         JsonSaveGameSystem jsonSaveGameSystem = engine.getSystem(JsonSaveGameSystem.class);
         jsonSaveGameSystem.loadWorld();
+    }
+
+    public void removeActiveSection() {
+        SectionComponent sectionComp = sectionMapper.get(sections.get(activeSection));
+        for(Entity entity : sectionComp.allEntities)
+            engine.removeEntity(entity);
+
+        engine.removeEntity(sections.get(activeSection));
     }
 }
