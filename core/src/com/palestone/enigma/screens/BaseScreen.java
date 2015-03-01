@@ -7,7 +7,7 @@ import com.palestone.enigma.EnigmaMain;
 
 public abstract class BaseScreen implements Screen {
 
-    public int width, height;
+    public static int width, height;
     protected EnigmaMain game;
     OrthographicCamera camera;
 

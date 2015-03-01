@@ -5,9 +5,9 @@ import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.palestone.enigma.components.*;
+import com.palestone.enigma.enums.EntityType;
 import com.palestone.enigma.enums.Layer;
 import com.palestone.enigma.systems.JsonSaveGameSystem;
 import com.palestone.enigma.systems.PlayerSystem;
@@ -15,6 +15,7 @@ import com.palestone.enigma.systems.PlayerSystem;
 public class World {
 
     private Engine engine;
+    public static final int GRID_SIZE = 16;
     public static Vector2 activeSection;
     public static ObjectMap<Vector2, Entity> sections;
 
@@ -35,26 +36,33 @@ public class World {
     private void createPlayer() {
         Entity player = new Entity();
 
+        SerializableComponent serializableComp = new SerializableComponent();
         MovementComponent movementComponent = new MovementComponent();
         TransformComponent transformComponent = new TransformComponent();
         TextureComponent textureComponent = new TextureComponent();
         PlayerComponent playerComponent = new PlayerComponent();
-        CollisionComponent collisionComponent = new CollisionComponent();
+        BodyComponent bodyComponent = new BodyComponent();
+        LiftComponent canLifrComp = new LiftComponent();
 
-        textureComponent.textureName = "player";
-        textureComponent.region.setRegion(TextureAssets.unitMap.get(textureComponent.textureName));
+        serializableComp.entityType = EntityType.PLAYER;
+
+        textureComponent.textureName = "unitSheet/player0";
+        textureComponent.region.setRegion(TextureAssets.getRegion(textureComponent.textureName));
         textureComponent.layer = Layer.MIDDLE;
 
-        transformComponent.position.set(200, 200);
+        transformComponent.position.set(300, 400);
 
-        collisionComponent.body = new Rectangle(transformComponent.position.x, transformComponent.position.y,
+        bodyComponent.collides = true;
+        bodyComponent.body = new Rectangle(transformComponent.position.x, transformComponent.position.y,
                 32, 32);
 
+        player.add(serializableComp);
         player.add(movementComponent);
         player.add(transformComponent);
         player.add(textureComponent);
-        player.add(collisionComponent);
+        player.add(bodyComponent);
         player.add(playerComponent);
+        player.add(canLifrComp);
 
         engine.addEntity(player);
         PlayerSystem.id = player.getId();
@@ -87,5 +95,9 @@ public class World {
             engine.removeEntity(entity);
 
         engine.removeEntity(sections.get(activeSection));
+    }
+
+    public static Entity getActiveSection(){
+        return sections.get(activeSection);
     }
 }

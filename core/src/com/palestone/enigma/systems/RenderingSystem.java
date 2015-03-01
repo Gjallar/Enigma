@@ -5,8 +5,11 @@ import com.badlogic.ashley.core.Engine;
 import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.systems.IteratingSystem;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 import com.palestone.enigma.EnigmaMain;
@@ -22,6 +25,7 @@ public class RenderingSystem extends IteratingSystem{
     private EnigmaMain game;
     private Comparator<Entity> comparator;
     private Array<Array<Entity>> renderQueues;
+    private Color tint;
 
     private ComponentMapper<TextureComponent> textureMapper;
     private ComponentMapper<TransformComponent> transformMapper;
@@ -46,6 +50,7 @@ public class RenderingSystem extends IteratingSystem{
         };
 
         this.game = game;
+        tint = new Color(1f, 1f, 1f, 1f);
     }
 
     @Override
@@ -65,11 +70,21 @@ public class RenderingSystem extends IteratingSystem{
                 TextureComponent textureComponent = textureMapper.get(entity);
                 TransformComponent transformComponent = transformMapper.get(entity);
 
-                float xPos = MathUtils.round(transformComponent.position.x);
-                float yPos = MathUtils.round(transformComponent.position.y);
+                float xPos = transformComponent.position.x;
+                float yPos = transformComponent.position.y;
+                xPos = MathUtils.round(xPos);
+                yPos = MathUtils.round(yPos);
                 float originX = 0f;
                 float originY = 0f;
 
+                if(textureComponent.alpha != 1) {
+                    tint.set(1f, 1f, 1f, textureComponent.alpha);
+                }
+                else {
+                    tint.set(1f, 1f, 1f, 1f);
+                }
+
+                game.batch.setColor(tint);
                 game.batch.draw(textureComponent.region,
                         xPos, yPos,
                         originX, originY,

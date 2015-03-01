@@ -6,5 +6,4 @@ import com.badlogic.gdx.math.Vector2;
 
 public class DoorComponent extends Component{
     public Vector2 linkedSectionKey;
-    public Rectangle body;
 }

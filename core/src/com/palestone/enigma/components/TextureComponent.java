@@ -8,4 +8,6 @@ public class TextureComponent extends Component {
     public String textureName;
     public TextureRegion region = new TextureRegion();
     public Layer layer;
+
+    public float alpha = 1f;
 }

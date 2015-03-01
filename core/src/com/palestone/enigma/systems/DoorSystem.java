@@ -14,19 +14,22 @@ public class DoorSystem extends IteratingSystem{
     private World world;
 
     ComponentMapper<DoorComponent> doorMapper;
+    ComponentMapper<BodyComponent> bodyMapper;
     ComponentMapper<SectionComponent> sectionMapper;
-    ComponentMapper<CollisionComponent> collisionMapper;
     ComponentMapper<TransformComponent> transformMapper;
+    ComponentMapper<LiftComponent> canLiftMapper;
 
     public DoorSystem(Engine engine, World world) {
         super(Family.all(DoorComponent.class).get());
 
         this.engine = engine;
         this.world = world;
+
         doorMapper = ComponentMapper.getFor(DoorComponent.class);
+        bodyMapper = ComponentMapper.getFor(BodyComponent.class);
         sectionMapper = ComponentMapper.getFor(SectionComponent.class);
-        collisionMapper = ComponentMapper.getFor(CollisionComponent.class);
         transformMapper = ComponentMapper.getFor(TransformComponent.class);
+        canLiftMapper = ComponentMapper.getFor(LiftComponent.class);
     }
 
     @Override
@@ -37,17 +40,18 @@ public class DoorSystem extends IteratingSystem{
     @Override
     protected void processEntity(Entity entity, float deltaTime) {
         Entity player = engine.getEntity(PlayerSystem.id);
-        CollisionComponent collisionCompPlayer = collisionMapper.get(player);
+        BodyComponent bodyCompPlayer = bodyMapper.get(player);
         TransformComponent transformCompPlayer = transformMapper.get(player);
 
         DoorComponent doorCompDoor = doorMapper.get(entity);
+        BodyComponent bodyCompDoor = bodyMapper.get(entity);
 
-        if(collisionCompPlayer.body.overlaps(doorCompDoor.body)) {
+        if(bodyCompPlayer.body.overlaps(bodyCompDoor.body)) {
             Entity linkedSection = World.sections.get(doorCompDoor.linkedSectionKey);
             if(linkedSection == null) {
                 world.removeActiveSection();
-                transformCompPlayer.position.set(200, 200);
-                collisionCompPlayer.body.setPosition(200, 200);
+                transformCompPlayer.position.set(300, 400);
+                bodyCompPlayer.body.setPosition(200, 200);
 
                 Entity newSection = new Entity();
 
@@ -60,6 +64,10 @@ public class DoorSystem extends IteratingSystem{
 
                 engine.addEntity(newSection);
 
+                LiftComponent canLiftCompPlayer = canLiftMapper.get(player);
+                if(canLiftCompPlayer.lifting)
+                    engine.addEntity(canLiftCompPlayer.entity);
+
                 World.activeSection = sectionCompNewSection.key;
                 World.sections.put(sectionCompNewSection.key, newSection);
             }
@@ -68,14 +76,17 @@ public class DoorSystem extends IteratingSystem{
                 ComponentMapper<TextureComponent> textureMapper = ComponentMapper.getFor(TextureComponent.class);
 
                 world.removeActiveSection();
-                transformCompPlayer.position.set(200, 200);
-                collisionCompPlayer.body.setPosition(200, 200);
+                transformCompPlayer.position.set(300, 400);
+                bodyCompPlayer.body.setPosition(200, 200);
 
                 engine.addEntity(linkedSection);
                 for(Entity sectionEntity : sectionCompLinkedSection.allEntities) {
-                    TextureComponent texComp = textureMapper.get(sectionEntity);
                     engine.addEntity(sectionEntity);
                 }
+
+                LiftComponent canLiftCompPlayer = canLiftMapper.get(player);
+                if(canLiftCompPlayer.lifting)
+                    engine.addEntity(canLiftCompPlayer.entity);
 
                 World.activeSection = sectionCompLinkedSection.key;
             }

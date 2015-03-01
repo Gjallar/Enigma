@@ -12,8 +12,5 @@ public class SectionComponent extends Component {
     public boolean generated;
     public int tileChance;
     public Array<Entity> allEntities = new Array<Entity>();
-    public Array<Entity> groundTiles = new Array<Entity>();
-    public Array<Entity> environmentTiles = new Array<Entity>();
-    public Array<Entity> doors = new Array<Entity>();
     public Tile[][] tileGrid;
 }

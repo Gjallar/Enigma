@@ -6,22 +6,21 @@ import com.badlogic.ashley.core.Entity;
 import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.systems.IteratingSystem;
 import com.badlogic.ashley.utils.ImmutableArray;
-import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
 import com.palestone.enigma.components.*;
 
 public class CollisionSystem extends IteratingSystem{
     private Engine engine;
     private boolean correctedX, correctedY;
-    ComponentMapper<CollisionComponent> collisionMapper;
+    ComponentMapper<BodyComponent> bodyMapper;
     ComponentMapper<MovementComponent> movementMapper;
     ComponentMapper<TransformComponent> transformMapper;
 
     public CollisionSystem(Engine engine) {
-        super(Family.all(CollisionComponent.class, MovementComponent.class).get());
+        super(Family.all(BodyComponent.class, MovementComponent.class).get());
         this.engine = engine;
 
-        collisionMapper = ComponentMapper.getFor(CollisionComponent.class);
+        bodyMapper = ComponentMapper.getFor(BodyComponent.class);
         movementMapper = ComponentMapper.getFor(MovementComponent.class);
         transformMapper = ComponentMapper.getFor(TransformComponent.class);
     }
@@ -33,15 +32,18 @@ public class CollisionSystem extends IteratingSystem{
 
     @Override
     protected void processEntity(Entity entity, float deltaTime) {
-        ImmutableArray<Entity> collidables = engine.getEntitiesFor(Family.all(CollisionComponent.class)
+        BodyComponent bodyCompEntity = bodyMapper.get(entity);
+        if(!bodyCompEntity.collides)
+            return;
+
+        ImmutableArray<Entity> collidables = engine.getEntitiesFor(Family.all(BodyComponent.class)
                 .exclude(MovementComponent.class).get());
 
         Array<Entity> collidingEntities = new Array<Entity>();
-        CollisionComponent entityCollisionComp = collisionMapper.get(entity);
         MovementComponent entityMovementComp = movementMapper.get(entity);
         for(Entity collidable : collidables) {
-            CollisionComponent collidableCollisionComp = collisionMapper.get(collidable);
-            if(!entityCollisionComp.body.overlaps(collidableCollisionComp.body))
+            BodyComponent collidableCollisionComp = bodyMapper.get(collidable);
+            if(!bodyCompEntity.body.overlaps(collidableCollisionComp.body))
                 continue;
 
             collidingEntities.add(collidable);
@@ -65,20 +67,20 @@ public class CollisionSystem extends IteratingSystem{
     }
 
     private Entity getHighestXOffsetEntity(Entity entity, Array<Entity> collidingEntities) {
-        CollisionComponent entityCollisionComp = collisionMapper.get(entity);
+        BodyComponent entityCollisionComp = bodyMapper.get(entity);
         MovementComponent entityMovementComp = movementMapper.get(entity);
         TransformComponent entityTransformComponent = transformMapper.get(entity);
         Entity highestXOffsetEntity = null;
         float xOffsetCurrent = 0;
         float xOffsetHighest = 0;
         for(Entity collidable : collidingEntities) {
-            CollisionComponent collidableCollisionComp = collisionMapper.get(collidable);
+            BodyComponent collidableCollisionComp = bodyMapper.get(collidable);
             TransformComponent collidableTransformComp = transformMapper.get(collidable);
 
             if(highestXOffsetEntity == null)
                 highestXOffsetEntity = collidable;
 
-            CollisionComponent highestXCollisionComp = collisionMapper.get(highestXOffsetEntity);
+            BodyComponent highestXCollisionComp = bodyMapper.get(highestXOffsetEntity);
             TransformComponent highestXTransformComp = transformMapper.get(highestXOffsetEntity);
 
             if(entityMovementComp.velocity.x > 0) {
@@ -103,20 +105,20 @@ public class CollisionSystem extends IteratingSystem{
     }
 
     private Entity getHighestYOffsetEntity(Entity entity, Array<Entity> collidingEntities) {
-        CollisionComponent entityCollisionComp = collisionMapper.get(entity);
+        BodyComponent entityCollisionComp = bodyMapper.get(entity);
         MovementComponent entityMovementComp = movementMapper.get(entity);
         TransformComponent entityTransformComponent = transformMapper.get(entity);
         Entity highestYOffsetEntity = null;
         float yOffsetCurrent = 0;
         float yOffsetHighest = 0;
         for(Entity collidable : collidingEntities) {
-            CollisionComponent collidableCollisionComp = collisionMapper.get(collidable);
+            BodyComponent collidableCollisionComp = bodyMapper.get(collidable);
             TransformComponent collidableTransformComp = transformMapper.get(collidable);
 
             if(highestYOffsetEntity == null)
                 highestYOffsetEntity = collidable;
 
-            CollisionComponent highestYCollisionComp = collisionMapper.get(highestYOffsetEntity);
+            BodyComponent highestYCollisionComp = bodyMapper.get(highestYOffsetEntity);
             TransformComponent highestYTransformComp = transformMapper.get(highestYOffsetEntity);
 
             if(entityMovementComp.velocity.y > 0) {
@@ -149,10 +151,10 @@ public class CollisionSystem extends IteratingSystem{
 
         MovementComponent entityMovementComp = movementMapper.get(entity);
         TransformComponent entityTransformComp = transformMapper.get(entity);
-        CollisionComponent entityCollisionComp = collisionMapper.get(entity);
+        BodyComponent entityCollisionComp = bodyMapper.get(entity);
 
         TransformComponent collidingEntityTransformComp = transformMapper.get(collidingEntity);
-        CollisionComponent collidingEntityCollisionComp = collisionMapper.get(collidingEntity);
+        BodyComponent collidingEntityCollisionComp = bodyMapper.get(collidingEntity);
 
         if(entityMovementComp.velocity.x > 0)
             xOffset = entityTransformComp.position.x + entityCollisionComp.body.width -

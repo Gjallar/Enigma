@@ -7,34 +7,34 @@ import com.badlogic.ashley.core.Family;
 import com.badlogic.ashley.systems.IteratingSystem;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.utils.ObjectMap;
-import com.palestone.enigma.TextureAssets;
+import com.palestone.enigma.LoadWorld;
+import com.palestone.enigma.SaveWorld;
 import com.palestone.enigma.World;
 import com.palestone.enigma.components.*;
-import com.palestone.enigma.enums.Layer;
-
-import java.util.ArrayList;
+import com.palestone.enigma.JsonClasses.*;
 
 public class JsonSaveGameSystem extends IteratingSystem{
     Engine engine;
+    SaveWorld save;
+    LoadWorld load;
 
-    ComponentMapper<TransformComponent> transformMapper;
-    ComponentMapper<TextureComponent> textureMapper;
+    ComponentMapper<SerializableComponent> serializableMapper;
     ComponentMapper<SectionComponent> sectionMapper;
-    ComponentMapper<DoorComponent> doorMapper;
+    ComponentMapper<LiftComponent> canLiftMapper;
 
     public JsonSaveGameSystem(Engine engine) {
         super(Family.all(JsonSaveGameComponent.class).get());
 
         this.engine = engine;
+        save = new SaveWorld();
+        load = new LoadWorld();
 
-        transformMapper = ComponentMapper.getFor(TransformComponent.class);
-        textureMapper = ComponentMapper.getFor(TextureComponent.class);
+        serializableMapper = ComponentMapper.getFor(SerializableComponent.class);
         sectionMapper = ComponentMapper.getFor(SectionComponent.class);
-        doorMapper = ComponentMapper.getFor(DoorComponent.class);
+        canLiftMapper = ComponentMapper.getFor(LiftComponent.class);
     }
 
     @Override
@@ -47,109 +47,31 @@ public class JsonSaveGameSystem extends IteratingSystem{
 
     }
 
-    public static class JsonWorld {
-        public JsonPlayer player;
-        public Vector2 activeSection;
-        public ArrayList<JsonSection> sections = new ArrayList<JsonSection>();
-    }
-
-    public static class JsonSection {
-        public Vector2 key;
-        public ArrayList<JsonGroundTile> groundTiles = new ArrayList<JsonGroundTile>();
-        public ArrayList<JsonEnvironmentTile> environmentTiles = new ArrayList<JsonEnvironmentTile>();
-        public ArrayList<JsonDoor> doors = new ArrayList<JsonDoor>();
-    }
-
-    public static class JsonPlayer {
-        public float x;
-        public float y;
-        public String textureName;
-        public Layer layer;
-    }
-
-    public static class JsonGroundTile {
-        public float x;
-        public float y;
-        public String textureName;
-        public Layer layer;
-        public Vector2 parentKey;
-    }
-
-    public static class JsonEnvironmentTile {
-        public float x;
-        public float y;
-        public String textureName;
-        public Layer layer;
-        public Vector2 parentKey;
-    }
-
-    public static class JsonDoor {
-        public float x;
-        public float y;
-        public String textureName;
-        public Layer layer;
-        public Vector2 parentKey;
-        public Vector2 linkedSectionKey;
-    }
-
     public void saveWorld() {
         JsonWorld jsonWorld = new JsonWorld();
         jsonWorld.activeSection = World.activeSection;
 
         Entity player = engine.getEntity(PlayerSystem.id);
-        TransformComponent transformCompP = transformMapper.get(player);
-        TextureComponent textureCompP = textureMapper.get(player);
-        JsonPlayer jsonPlayer = new JsonPlayer();
-        jsonPlayer.x = transformCompP.position.x;
-        jsonPlayer.y = transformCompP.position.y;
-        jsonPlayer.textureName = textureCompP.textureName;
-        jsonPlayer.layer = textureCompP.layer;
+        jsonWorld.player = save.savePlayer(player);
 
-        jsonWorld.player = jsonPlayer;
+        LiftComponent canLiftCompPlayer = canLiftMapper.get(player);
+        if(canLiftCompPlayer.lifting) {
+            jsonWorld.player.liftable = save.generateJsonEntity(canLiftCompPlayer.entity);
+        }
+
 
         for(ObjectMap.Entry<Vector2, Entity> entry : World.sections.entries()) {
             SectionComponent sectionComp = sectionMapper.get(entry.value);
             JsonSection jsonSection = new JsonSection();
             jsonSection.key = entry.key;
 
-            for (Entity groundTile : sectionComp.groundTiles) {
-                TransformComponent transformComp = transformMapper.get(groundTile);
-                TextureComponent textureComp = textureMapper.get(groundTile);
-                JsonGroundTile jsonGroundTile = new JsonGroundTile();
-                jsonGroundTile.x = transformComp.position.x;
-                jsonGroundTile.y = transformComp.position.y;
-                jsonGroundTile.textureName = textureComp.textureName;
-                jsonGroundTile.layer = textureComp.layer;
+            for (Entity serializableEntity : sectionComp.allEntities) {
+                JsonEntity jsonEntity = save.generateJsonEntity(serializableEntity);
+                if(jsonEntity == null)
+                    System.out.println("[SAVE] Entity has no valid Type!");
 
-                jsonSection.groundTiles.add(jsonGroundTile);
+                jsonSection.entities.add(jsonEntity);
             }
-
-            for (Entity environmentTile : sectionComp.environmentTiles) {
-                TransformComponent transformComp = transformMapper.get(environmentTile);
-                TextureComponent textureComp = textureMapper.get(environmentTile);
-                JsonEnvironmentTile jsonEnvironmentTile = new JsonEnvironmentTile();
-                jsonEnvironmentTile.x = transformComp.position.x;
-                jsonEnvironmentTile.y = transformComp.position.y;
-                jsonEnvironmentTile.textureName = textureComp.textureName;
-                jsonEnvironmentTile.layer = textureComp.layer;
-
-                jsonSection.environmentTiles.add(jsonEnvironmentTile);
-            }
-
-            for (Entity door : sectionComp.doors) {
-                DoorComponent doorComp= doorMapper.get(door);
-                TransformComponent transformComp = transformMapper.get(door);
-                TextureComponent textureComp = textureMapper.get(door);
-                JsonDoor jsonDoor = new JsonDoor();
-                jsonDoor.x = transformComp.position.x;
-                jsonDoor.y = transformComp.position.y;
-                jsonDoor.textureName = textureComp.textureName;
-                jsonDoor.layer = textureComp.layer;
-                jsonDoor.linkedSectionKey = doorComp.linkedSectionKey;
-
-                jsonSection.doors.add(jsonDoor);
-            }
-
             jsonWorld.sections.add(jsonSection);
         }
 
@@ -165,7 +87,14 @@ public class JsonSaveGameSystem extends IteratingSystem{
             JsonWorld jsonWorld = json.fromJson(JsonWorld.class, save);
             World.activeSection = jsonWorld.activeSection;
 
-            loadPlayer(jsonWorld.player);
+            Entity player = load.loadPlayer(jsonWorld.player);
+            engine.addEntity(player);
+            PlayerSystem.id = player.getId();
+
+            LiftComponent canLiftCompPlayer = canLiftMapper.get(player);
+            if(jsonWorld.player.lifting) {
+                engine.addEntity(canLiftCompPlayer.entity);
+            }
 
             for(JsonSection jsonSection : jsonWorld.sections) {
                 Entity section = new Entity();
@@ -177,120 +106,25 @@ public class JsonSaveGameSystem extends IteratingSystem{
                     sectionComp.initialSection = true;
                 }
 
+                for(JsonEntity jsonEntity : jsonSection.entities) {
+                    Entity entity = load.generateEntity(jsonEntity);
+                    if(entity == null)
+                        System.out.println("[LOAD] JsonEntity has no valid Type!");
+
+                    sectionComp.allEntities.add(entity);
+                }
+
                 section.add(sectionComp);
-
                 World.sections.put(sectionComp.key, section);
-
-                for(JsonGroundTile jsonGroundTile : jsonSection.groundTiles) {
-                    Entity groundTile = new Entity();
-
-                    GroundTileComponent groundTileComp = new GroundTileComponent();
-                    TransformComponent transformComp = new TransformComponent();
-                    TextureComponent textureComp = new TextureComponent();
-
-                    textureComp.textureName = jsonGroundTile.textureName;
-                    textureComp.region.setRegion(TextureAssets.sectionMap.get(jsonGroundTile.textureName));
-                    textureComp.layer = jsonGroundTile.layer;
-
-                    transformComp.position.set(jsonGroundTile.x, jsonGroundTile.y);
-
-                    groundTile.add(groundTileComp);
-                    groundTile.add(transformComp);
-                    groundTile.add(textureComp);
-
-                    sectionComp.groundTiles.add(groundTile);
-                    sectionComp.allEntities.add(groundTile);
-                }
-
-                for(JsonEnvironmentTile jsonEnvironmentTile : jsonSection.environmentTiles) {
-                    Entity environmentTile = new Entity();
-
-                    EnvironmentTileComponent environmentTileComp = new EnvironmentTileComponent();
-                    TransformComponent transformComp = new TransformComponent();
-                    TextureComponent textureComp = new TextureComponent();
-                    CollisionComponent collisionComp = new CollisionComponent();
-
-                    textureComp.textureName = jsonEnvironmentTile.textureName;
-                    textureComp.region.setRegion(TextureAssets.sectionMap.get(textureComp.textureName));
-                    textureComp.layer = jsonEnvironmentTile.layer;
-
-                    transformComp.position.set(jsonEnvironmentTile.x, jsonEnvironmentTile.y);
-
-                    collisionComp.body = new Rectangle(transformComp.position.x, transformComp.position.y,
-                            textureComp.region.getRegionWidth(), textureComp.region.getRegionHeight());
-
-                    environmentTile.add(transformComp);
-                    environmentTile.add(textureComp);
-                    environmentTile.add(collisionComp);
-                    environmentTile.add(environmentTileComp);
-
-                    sectionComp.environmentTiles.add(environmentTile);
-                    sectionComp.allEntities.add(environmentTile);
-                }
-
-                for(JsonDoor jsonDoor : jsonSection.doors) {
-                    Entity door = new Entity();
-
-                    DoorComponent doorComp = new DoorComponent();
-                    TransformComponent transformComp = new TransformComponent();
-                    TextureComponent textureComp = new TextureComponent();
-
-                    doorComp.linkedSectionKey = jsonDoor.linkedSectionKey;
-
-                    textureComp.textureName = jsonDoor.textureName;
-                    textureComp.region.setRegion(TextureAssets.sectionMap.get(textureComp.textureName));
-                    textureComp.layer = jsonDoor.layer;
-
-                    transformComp.position.set(jsonDoor.x, jsonDoor.y);
-
-                    doorComp.body = new Rectangle(transformComp.position.x, transformComp.position.y,
-                            textureComp.region.getRegionWidth(), textureComp.region.getRegionHeight());
-
-                    door.add(transformComp);
-                    door.add(textureComp);
-                    door.add(doorComp);
-
-                    sectionComp.doors.add(door);
-                    sectionComp.allEntities.add(door);
-                }
             }
         }
         addActiveSectionToEngine();
         System.out.println("Loaded world.");
     }
 
-    private void loadPlayer(JsonPlayer jsonPlayer) {
-        Entity player = new Entity();
-
-        CollisionComponent collisionComp = new CollisionComponent();
-        MovementComponent movementComp = new MovementComponent();
-        TransformComponent transformComp = new TransformComponent();
-        TextureComponent textureComp = new TextureComponent();
-        PlayerComponent playerComp = new PlayerComponent();
-
-        textureComp.textureName = jsonPlayer.textureName;
-        textureComp.region.setRegion(TextureAssets.unitMap.get(textureComp.textureName));
-        textureComp.layer = jsonPlayer.layer;
-
-        transformComp.position.set(jsonPlayer.x, jsonPlayer.y);
-
-        collisionComp.body = new Rectangle(transformComp.position.x, transformComp.position.y,
-                32, 32);
-
-        player.add(movementComp);
-        player.add(transformComp);
-        player.add(textureComp);
-        player.add(playerComp);
-        player.add(collisionComp);
-
-        engine.addEntity(player);
-        PlayerSystem.id = player.getId();
-    }
-
     private void addActiveSectionToEngine() {
         Entity section = World.sections.get(World.activeSection);
         SectionComponent sectionComp = sectionMapper.get(section);
-
         for(Entity entity : sectionComp.allEntities)
             engine.addEntity(entity);
 
